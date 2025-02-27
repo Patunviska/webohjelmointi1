@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Puhelinluettelo</title>
+    <link rel="stylesheet" href="style-puhelinluettelo.css" />
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script>
+      $(document).ready(function () {
+        // FETCHING DATA FROM JSON FILE
+        $.getJSON(
+          "http://a41d.k.time4vps.cloud:3001/henkilot",
+          function (data) {
+            var taulukko =
+              "<table><tr><th>Nimi</th><th>Puhelinnumero</th></tr>";
+            $.each(data, function (key, value) {
+              taulukko += "<tr>";
+              taulukko += "<td>" + value.nimi + "</td>";
+              taulukko += "<td>" + value.puhelin + "</td>";
+              taulukko += "</tr>";
+            });
+            taulukko += "</table>";
+            $("#puhelinluettelo").html(taulukko);
+          }
+        );
+      });
+    </script>
+  </head>
+  <body>
+    <h1>Kaikki henkilöt</h1>
+    <div id="puhelinluettelo">Ladataan tietoja...</div>
+    <br />
+    <a href="index.html" class="paluu-linkki">Takaisin pääsivulle</a>
+  </body>
+</html>
