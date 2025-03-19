@@ -1,0 +1,143 @@
+// Otetaan käyttöön Node.js moduuleja
+
+// lataa File System- moduulin, jotta voidaan lukea, kirjoittaa sekä käsitellä tiedostoja
+// esimerkiksi henkilön tietojen tallennuksessa oleva fs.writeFileSync
+const fs = require("fs");
+// otetaan käyttöön myös readline, jolla luetaan käyttäjän inputia
+const readline = require("readline");
+
+// Tiedoston nimi, johon sitten lopulta nimet ja puhelinnumerot tallennetaan
+const TIEDOSTO = "puhelinluettelo.json";
+
+// Lataa nimitiedoston, jos sellainen on olemassa. Jos ei, se luodaan.
+// Tällä tavalla tiedot ei häviä aina, kun sovellus suljetaan
+let puhelinluettelo = [];
+if (fs.existsSync(TIEDOSTO)) {
+  const data = fs.readFileSync(TIEDOSTO, "utf-8");
+  puhelinluettelo = JSON.parse(data);
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Eri funktiot
+///////////////////////////////////////////////////////////////////////////
+
+// Henkilön lisääminen siihen listaan puhelinluettelo. Listaan lisätään nimi ja se puhelinnumero
+// kutsutaan lopuksi funktiota tallennaTiedostoon, joka tekee itse tietojen kirjoituksen tiedostoon. Tai siis lisää listan tietoja .json- tiedostoon
+function lisaaHenkilo(nimi, puhelinnumero) {
+  puhelinluettelo.push({ nimi: nimi, puhelinnumero: puhelinnumero });
+  tallennaTiedostoon();
+}
+
+// Henkilön hakeminen nimen perusteella. Syöte ja puhelinluettelon henkilön nimi muutetaan pieniksi kirjaimiksi
+// muuttamalla molemmat pieniksi kirjaimiksi vältytään ongelmilta, jos tallennettu nimi on vaikka Harri ja käyttäjä etsii harria, johon ohjelma vastaa ettei löydy hartsaa
+function haePuhelinnumero(taulukko, nimi) {
+  let henkilo = taulukko.find(
+    (h) => h.nimi.toLowerCase() === nimi.toLowerCase()
+  );
+  //tässä käytössä ternäärinen ehtolause
+  // ehto ? arvoJosTosi : arvoJosEpätosi
+  // eli jos henkilö löytyy, true, palautetaan nimi ja puhelinnumero
+  // jos ei löydy, kaksoispisteen jälkeinen ehto eli teksti "ei löytynyt"
+  //olisi voinut tehdä if-elselläkin
+  return henkilo ? henkilo.puhelinnumero : "Henkilöä ei löytynyt.";
+}
+
+// Tallennetaan puhelinluettelo- listan tiedot .json- tiedostoon.
+function tallennaTiedostoon() {
+  fs.writeFileSync(TIEDOSTO, JSON.stringify(puhelinluettelo, null, 2));
+}
+
+// Kysäisee palataanko takaisin alkuvalikkoon vai ei
+// kyllä palauttaa valikkoon, ei sulkee ohjelman ja vikasyöte kysäisee uudestaan että mitä tehdään
+// tässä käy vastaukseksi myös k tai e. Ajavat saman asian kuin kyllä ja ei.
+// lisätty pelkästään listauksen jälkeen. Tuntui paremmalta pitkän nimilistauksen jälkeen, jos sovellus ei heitä suoraan koko valikkoa naamalle
+// muissa funktioissa ei haitannut niin paljoa
+
+function palaaValikkoon() {
+  rl.question(
+    "\nHaluatko palata päävalikkoon? (kyllä/ei) (k/e): ",
+    //toLowerCase muuttaa tässäkin vastauksen pieniksi kirjaimiksi. Vaikka käyttäjä kirjoittaisi KYLLÄ, ohjelma osaa tulkita sen oikein ja lukee "kyllä"
+    (vastaus) => {
+      const vastausPienella = vastaus.toLowerCase();
+
+      if (vastausPienella === "kyllä" || vastausPienella === "k") {
+        kysyValinta();
+      } else if (vastausPienella === "ei" || vastausPienella === "e") {
+        console.log("Ohjelma suljetaan.");
+        rl.close();
+      } else {
+        console.log("Virheellinen syöte. Kirjoita 'kyllä' tai 'ei'.");
+        palaaValikkoon();
+      }
+    }
+  );
+}
+
+// Komentokehotteessa oltava osa, joka tavallaan kertoo sovellukselle, että sen pitää osata lukea syötettä ja tulostaa tekstiä näytölle tai siis konsoliin
+// luo sen luku- ja kirjoitusrajapinnan, joka sitten lopuksi suljetaan
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// valintafunktio, jossa esitellään vaihtoehdot, luetaan käyttäjän syöte ja tehdään jotain sen perusteella
+function kysyValinta() {
+  console.log("");
+  console.log("Puhelinluettelo");
+  console.log("");
+  console.log("1. Lisää uusi henkilö");
+  console.log("2. Hae puhelinnumero");
+  console.log("3. Näytä kaikki tiedot");
+  console.log("4. Lopeta ohjelma");
+  console.log("");
+
+  rl.question("Valitse toiminto (1-4): ", (valinta) => {
+    console.log("");
+    //valinta ykkönen kutsuu funktiota lisaahenkilo, jonka avulla listaan saadaan tietoja mitkä sitten tallennetaan tiedostoon
+    if (valinta === "1") {
+      rl.question("Syötä nimi: ", (nimi) => {
+        rl.question("Syötä puhelinnumero: ", (puhelinnumero) => {
+          lisaaHenkilo(nimi, puhelinnumero);
+          //pakko käyttää `- hipsua normaalin "-heittomerkin sijaan, koska sisältää $(muuttuja)- tyylisiä juttuja
+          console.log(`Lisätty: ${nimi} - ${puhelinnumero}`);
+          kysyValinta();
+        });
+      });
+      //kakkonen kysyy haettavan henkilön nimeä ja kutsuu funktiota haepuhelinnumero. Funktio muuttaa annetun nimen pieniksi kirjaimiksi ja
+      //etsii sen nimistä henkilöä tiedostosta. Antaa tiedot jos löytyy, pahoittelee jos ei löydy
+    } else if (valinta === "2") {
+      rl.question("Syötä haettavan henkilön nimi: ", (haettavaNimi) => {
+        console.log(
+          `Puhelinnumero: ${haePuhelinnumero(puhelinluettelo, haettavaNimi)}`
+        );
+        kysyValinta();
+      });
+    }
+
+    //kolmonen listaa kaikki tallennetut tiedot. Lukee tiedostoa ja tulostaa jokaisen entryn näytölle niiden tallennusjärjestyksen mukaisesti
+    //ilmoittaa listan olevan tyhjä, jos se on tyhjä
+    else if (valinta === "3") {
+      console.log("Tallennetut henkilöt:");
+      if (puhelinluettelo.length === 0) {
+        console.log("Ei tallennettuja henkilöitä.");
+      } else {
+        puhelinluettelo.forEach((henkilo, index) => {
+          console.log(
+            `${index + 1}. ${henkilo.nimi}: ${henkilo.puhelinnumero}`
+          );
+        });
+      }
+      palaaValikkoon();
+    } else if (valinta === "4") {
+      console.log("Ohjelma suljetaan. Tiedot tallennettu.");
+      rl.close();
+      //jos käyttäjä antaa jotain muuta vastaukseksi kuin 1,2,3 tai 4, pyytää ohjelma antamaan oikean syötteen
+    } else {
+      console.log("Virheellinen valinta. Yritä uudelleen.");
+      kysyValinta();
+    }
+  });
+}
+
+// Itse sovelluksen käynnistys
+kysyValinta();
